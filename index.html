@@ -88,7 +88,11 @@ h1 span{color:var(--accent)}
 .mk[data-v="F"][aria-pressed="true"]{background:var(--no);border-color:var(--no);color:#fff}
 .row.P{background:var(--ok-bg)} .row.F{background:var(--no-bg)}
 .big{width:100%;padding:14px;font-size:17px;border-radius:12px}
-a.btn.fotos{display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;text-decoration:none}
+.ginfo{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.ginfo .mon{color:var(--muted);font-size:14px;min-width:0}
+.actrow{display:flex;gap:8px}
+.actrow #allP{flex:1;min-width:0}
+.fotosq{flex:0 0 64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:12px;border:2px solid var(--accent);background:var(--surface);color:var(--accent);font:700 12px var(--body);text-decoration:none}
 details summary{cursor:pointer;color:var(--muted);font-weight:600;font-size:14px;padding:4px 0}
 .mk:disabled{cursor:default;opacity:.7}
 textarea{width:100%;box-sizing:border-box;min-height:64px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:15px var(--body);padding:10px}
@@ -258,19 +262,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
     const off = dow(st.fecha)!==g.dia && !g.id.startsWith('tecnificacion');
     v.innerHTML = `
       <section style="display:flex;flex-direction:column;gap:12px">
-        <div class="ghead" style="--gc:${gcolor(g.cor)}">
-          <div><h2>${esc(g.nome)}</h2><div class="mon">${g.monitor?'Monitor/a: '+esc(g.monitor):'Sen monitor asignado'} · ${DIAS[dow(st.fecha)]} ${fmt(st.fecha)}</div></div>
-          <div class="count">${pres}<small> / ${g.nenos.length} veñen</small></div>
+        <div class="ginfo">
+          <span class="mon">${g.monitor?'Monitor/a: '+esc(g.monitor):'Sen monitor asignado'}</span>
+          <span class="count">${pres}<small> / ${g.nenos.length} veñen</small></span>
         </div>
         ${isFuture()?`<div class="banner">${st.fecha>today()?'Aínda non se pode pasar lista: é un día futuro.':'Día pasado: só se pode consultar. A lista só se pasa o día de hoxe.'}</div>`:''}
         ${off?`<div class="banner">Este grupo adestra os ${DIAS[g.dia]}. Comproba a data.</div>`:''}
-        <div class="actions">
-          <button class="btn primary big" id="allP" ${locked()?'disabled':''}>✓ Marcar todos como que veñen</button>
-          <span class="status" id="status">${st.loading?'Cargando…':marked?`${marked} marcados`:'Sen marcar'}</span>
+        <div class="actrow">
+          <button class="btn primary big" id="allP" ${locked()?'disabled':''}>✓ Marcar todos</button>
+          ${verFotos() && !isFuture() ? `<a class="fotosq" href="${esc(fotosUrl(g))}" target="_blank" rel="noopener" aria-label="Subir fotos ou vídeos desta clase"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>Fotos</a>` : ''}
         </div>
+        <span class="status" id="status" style="text-align:right;margin-top:-6px">${st.loading?'Cargando…':marked?`${marked} marcados`:'Sen marcar'}</span>
         <div class="list${st.loading?' loading':''}" id="rows"></div>
-        ${verFotos() && !isFuture() ? `<a class="btn big fotos" href="${esc(fotosUrl(g))}" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>Subir fotos ou vídeos desta clase</a>
-        <div class="legend">Só nenos con autorización de imaxe. Despois de subilos, bórraos do teu móbil.</div>` : ''}
         <details ${st.notas?'open':''}><summary>Engadir unha observación (opcional)</summary>
         <textarea id="notas" placeholder="Ex.: chovía, clase no circuíto…" ${locked()?'disabled':''}></textarea></details>
       </section>`;
