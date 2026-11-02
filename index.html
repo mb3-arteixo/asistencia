@@ -150,7 +150,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   const API = 'https://script.google.com/macros/s/AKfycbyTBEusyCnySH3KyzEBiemtT68aUDAkvj9PtSm-4svmYo-2P2yTJ3TyXqEXZDc9BCI/exec';
   // Formulario "Fotos MB3": pegar aquí a "Ligazón para a app" que dá instalar(). Baleiro = sen botón.
   // Mentres se proba, o botón só o ve quen estea nesta lista (nome exacto da pestana Monitores). Baleira = todos.
-  const FOTOS_PROBA = ['Miguel Barro'];
+  const FOTOS_PROBA = ['Miguel Barro', 'Adrián Amado', 'Jessica Angulo'];
   const FOTOS = 'https://docs.google.com/forms/d/e/1FAIpQLSe1TRgfaCRoLrr3AsKW4yoaLEpgd8tKvKCQROMWJoy_suGNJg/viewform?usp=pp_url&entry.630402667=__DATA__&entry.278194583=__GRUPO__';
   const call = (fn,...a) => fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn,args:a})})
     .then(r=>r.json()).then(j=>{ if(!j.ok) throw new Error(j.err); return j.data; });
