@@ -93,6 +93,20 @@ h1 span{color:var(--accent)}
 .actrow{display:flex;gap:8px}
 .actrow #allP{flex:1;min-width:0}
 .fotosq{flex:0 0 64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:12px;border:2px solid var(--accent);background:var(--surface);color:var(--accent);font:700 12px var(--body);text-decoration:none}
+.fich{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.fich .t{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ppl{display:flex;flex-wrap:wrap;gap:6px}
+.pp{border-radius:999px;padding:5px 10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;border:0;font-family:var(--body)}
+.pp.ok{background:var(--ok-bg);color:var(--ok)}.pp.pend{background:var(--bg);color:var(--muted);border:1px solid var(--line)}.pp.sub{background:var(--xu-bg);color:var(--xu)}
+.pp .x{cursor:pointer;opacity:.7;font-weight:700;background:none;border:0;color:inherit;font-size:15px;padding:0 0 0 2px}
+.btn.done,.btn.done:disabled{background:var(--ok-bg);color:var(--ok);border-color:var(--ok);opacity:1}
+.fich select{height:40px;border-radius:10px;border:1px dashed var(--line);background:var(--surface);color:var(--fg);font:500 15px var(--body);padding:0 8px}
+.month{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.month b{font-family:var(--display);font-size:22px;text-transform:uppercase}
+.paytab td.n{text-align:center;font-weight:700;font-family:var(--display);font-size:18px}
+.paytab td{white-space:normal;text-align:left;vertical-align:top}
+.tabs:has(#tabPagos:not([hidden])) button{padding:6px 7px;font-size:12px}
+.paytab .det{font-size:12px;color:var(--muted)}
 details summary{cursor:pointer;color:var(--muted);font-weight:600;font-size:14px;padding:4px 0}
 .mk:disabled{cursor:default;opacity:.7}
 textarea{width:100%;box-sizing:border-box;min-height:64px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:15px var(--body);padding:10px}
@@ -127,6 +141,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
       <div class="tabs" role="group" aria-label="Vista">
         <button id="tabLista" aria-pressed="true">Lista</button>
         <button id="tabResumo" aria-pressed="false">Resumo</button>
+        <button id="tabPagos" aria-pressed="false" hidden>Pagos</button>
       </div>
     </div>
     <div class="datebar" id="datebar">
@@ -141,6 +156,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 
   <main id="vLista"></main>
   <main id="vResumo" hidden></main>
+  <main id="vPagos" hidden></main>
   <div class="foot" id="logoutBar" hidden><button class="linkbtn" id="logout" type="button">Saír (cambiar de usuario)</button></div>
 </div>
 
@@ -150,7 +166,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   const API = 'https://script.google.com/macros/s/AKfycbyTBEusyCnySH3KyzEBiemtT68aUDAkvj9PtSm-4svmYo-2P2yTJ3TyXqEXZDc9BCI/exec';
   // Formulario "Fotos MB3": pegar aquí a "Ligazón para a app" que dá instalar(). Baleiro = sen botón.
   // Mentres se proba, o botón só o ve quen estea nesta lista (nome exacto da pestana Monitores). Baleira = todos.
-  const FOTOS_PROBA = ['Miguel Barro', 'Adrián Amado', 'Jessica Angulo'];
+  const FOTOS_PROBA = [];
   const FOTOS = 'https://docs.google.com/forms/d/e/1FAIpQLSe1TRgfaCRoLrr3AsKW4yoaLEpgd8tKvKCQROMWJoy_suGNJg/viewform?usp=pp_url&entry.630402667=__DATA__&entry.278194583=__GRUPO__';
   const call = (fn,...a) => fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn,args:a})})
     .then(r=>r.json()).then(j=>{ if(!j.ok) throw new Error(j.err); return j.data; });
@@ -159,7 +175,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   const DIAS = ['domingo','luns','martes','mércores','xoves','venres','sábado'];
   const MK = {P:'Veu', F:'Non veu'};
   const st = { roster:null, gid:null, meus:[], admin:false, autoDate:true, fecha:today(), showAll:false, tab:'lista',
-               marks:{}, notas:'', canWrite:true, loading:false, saving:false, dirty:false, email:'', reqId:0 };
+               marks:{}, notas:'', canWrite:true, loading:false, saving:false, dirty:false, email:'', reqId:0, fich:null, monitores:[], mes:today().slice(0,7) };
 
   function today(){ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
   function shift(iso,n){ const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
@@ -180,10 +196,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   $('#next').onclick = () => { st.fecha=shift(st.fecha,1); st.autoDate=(st.fecha===today()); st.showAll=false; $('#fecha').value=st.fecha; pickDefaultGroup(false); openSession(); renderChips(); };
   $('#tabLista').onclick = () => setTab('lista');
   $('#tabResumo').onclick = () => setTab('resumo');
+  $('#tabPagos').onclick = () => setTab('pagos');
 
   function setTab(t){
-    st.tab=t; $('#tabLista').setAttribute('aria-pressed', t==='lista'); $('#tabResumo').setAttribute('aria-pressed', t==='resumo');
-    $('#vLista').hidden = t!=='lista'; $('#vResumo').hidden = t!=='resumo'; $('#datebar').hidden = t!=='lista';
+    st.tab=t; $('#tabLista').setAttribute('aria-pressed', t==='lista'); $('#tabResumo').setAttribute('aria-pressed', t==='resumo'); $('#tabPagos').setAttribute('aria-pressed', t==='pagos');
+    $('#vLista').hidden = t!=='lista'; $('#vResumo').hidden = t!=='resumo'; $('#vPagos').hidden = t!=='pagos'; $('#datebar').hidden = t!=='lista'; $('#chips').hidden = t==='pagos';
+    if(t==='pagos'){ openPagos(); return; }
     pickDefaultGroup(false); if(t==='resumo') openSummary(); else { renderChips(); openSession(); }
   }
 
@@ -227,6 +245,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
     renderLista();
     if(!st.gid) return;
     const id=docId(); const req=++st.reqId;
+    loadFich(req, id);
     run('getSession', st.gid, st.fecha).then(d=>{
       if(req!==st.reqId || docId()!==id) return;
       st.loading=false; st.marks={...(d.marks||{})}; st.notas=d.notas||''; renderLista(true);
@@ -266,6 +285,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
           <span class="mon">${g.monitor?'Monitor/a: '+esc(g.monitor):'Sen monitor asignado'}</span>
           <span class="count">${pres}<small> / ${g.nenos.length} veñen</small></span>
         </div>
+        <div class="fich" id="fich"></div>
         ${isFuture()?`<div class="banner">${st.fecha>today()?'Aínda non se pode pasar lista: é un día futuro.':'Día pasado: só se pode consultar. A lista só se pasa o día de hoxe.'}</div>`:''}
         ${off?`<div class="banner">Este grupo adestra os ${DIAS[g.dia]}. Comproba a data.</div>`:''}
         <div class="actrow">
@@ -296,6 +316,68 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
     const ta=$('#notas'); ta.value=st.notas;
     ta.oninput = () => { st.notas=ta.value; queueSave(); };
     $('#allP').onclick = () => { g.nenos.forEach(k=>{ if(!st.marks[k.id]) st.marks[k.id]='P'; }); renderLista(true); queueSave(); };
+    renderFich();
+  }
+
+  // ---------- Fichaxe de monitores ----------
+  function loadFich(req, id){
+    st.fich=null; const gid=st.gid, f=st.fecha;
+    run('getFichaxes', gid, f).then(r=>{ if(req!==st.reqId || docId()!==id) return; st.fich=r||[]; renderFich(); })
+      .catch(()=>{ if(req!==st.reqId) return; st.fich=[]; renderFich(); });
+  }
+  function fichar(monitor, on){
+    const g=group(); if(!g) return; const id=docId();
+    const box=$('#fich'); if(box) box.style.opacity='.6';
+    run('fichar', g.id, g.nome, st.fecha, monitor, on).then(r=>{ if(docId()!==id) return; st.fich=r||[]; renderFich(); })
+      .catch(e=>{ if(isAuth(e)) return; if(box) box.style.opacity=''; alert('Non se puido gardar: '+String(e&&e.message||e)); });
+  }
+  function renderFich(){
+    const box=$('#fich'); if(!box) return; box.style.opacity='';
+    const g=group(); if(!g){ box.hidden=true; return; } box.hidden=false;
+    if(st.fich===null){ box.innerHTML='<div class="t">Monitores hoxe</div><div class="legend">Cargando…</div>'; return; }
+    const asign=(g.monitor||'').split('·').map(x=>x.trim()).filter(Boolean);
+    const fich=st.fich, fNomes=fich.map(x=>x.monitor);
+    const chips=fich.map(x=>`<span class="pp ${x.tipo==='substituto'?'sub':'ok'}">✓ ${esc(x.monitor)}${x.tipo==='substituto'?' · substituto/a':x.hora?' · '+esc(x.hora):''}${st.admin?`<button class="x" data-del="${esc(x.monitor)}" aria-label="Quitar ${esc(x.monitor)}">×</button>`:''}</span>`)
+      .concat(asign.filter(n=>!fNomes.includes(n)).map(n=>`<span class="pp pend">○ ${esc(n)}</span>`)).join('');
+    let act='';
+    if(st.admin){
+      const opts=(st.monitores||[]).filter(n=>!fNomes.includes(n));
+      act=`<select id="fichAdd"><option value="">＋ Engadir monitor…</option>${opts.map(n=>`<option>${esc(n)}</option>`).join('')}</select>`;
+    } else if(st.fecha!==today()){
+      act='<div class="legend">Só se pode fichar o día da clase.</div>';
+    } else if(fNomes.includes(st.nome)){
+      act='<button class="btn big done" type="button" disabled>✓ Estás fichado/a nesta clase</button><button class="linkbtn" id="fichUndo" type="button">Equivoqueime, desfacer</button>';
+    } else {
+      act='<button class="btn primary big" id="fichGo" type="button">✋ Estou dando esta clase</button>';
+    }
+    box.innerHTML=`<div class="t">Monitores hoxe</div>${chips?`<div class="ppl">${chips}</div>`:''}${act}`;
+    const go=$('#fichGo'); if(go) go.onclick=()=>fichar(st.nome, true);
+    const un=$('#fichUndo'); if(un) un.onclick=()=>fichar(st.nome, false);
+    const ad=$('#fichAdd'); if(ad) ad.onchange=()=>{ if(ad.value) fichar(ad.value, true); };
+    box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ if(confirm('Quitar a '+b.dataset.del+' desta clase?')) fichar(b.dataset.del, false); });
+  }
+
+  // ---------- Pagos (só admins) ----------
+  const MESES=['xaneiro','febreiro','marzo','abril','maio','xuño','xullo','agosto','setembro','outubro','novembro','decembro'];
+  function shiftMes(ym,n){ let [y,m]=ym.split('-').map(Number); m+=n; while(m<1){m+=12;y--;} while(m>12){m-=12;y++;} return y+'-'+String(m).padStart(2,'0'); }
+  function openPagos(){
+    const v=$('#vPagos'); const ym=st.mes; const [y,m]=ym.split('-').map(Number);
+    v.innerHTML=`<section style="display:flex;flex-direction:column;gap:12px">
+      <div class="month"><button class="btn" id="mPrev">‹</button><b>${MESES[m-1]} ${y}</b><button class="btn" id="mNext">›</button></div>
+      <div id="payBody"><div class="note">Cargando…</div></div></section>`;
+    $('#mPrev').onclick=()=>{ st.mes=shiftMes(st.mes,-1); openPagos(); };
+    $('#mNext').onclick=()=>{ st.mes=shiftMes(st.mes,1); openPagos(); };
+    run('getPagos', ym).then(d=>{ if(st.mes!==ym || st.tab!=='pagos') return; renderPagos(d); })
+      .catch(e=>{ if(!isAuth(e)) $('#payBody').innerHTML='<div class="note">Non se puido cargar.</div>'; });
+  }
+  function renderPagos(d){
+    const b=$('#payBody'); const mons=d.monitores||[];
+    const det=x=>x.clases.map(c=>`${esc(c.grupo)} ${fmt(c.data)}${c.tipo==='substituto'?' (subst.)':''}`).join(' · ');
+    b.innerHTML = (mons.length?`<div class="tablewrap"><table class="paytab"><thead><tr><th>Monitor/a</th><th>Clases</th><th>Detalle</th></tr></thead><tbody>${
+      mons.map(x=>`<tr><td><b>${esc(x.monitor)}</b></td><td class="n">${x.clases.length}</td><td class="det">${det(x)}</td></tr>`).join('')}</tbody></table></div>`
+      : '<div class="note">Ningún monitor fichou este mes.</div>')
+      + ((d.senFichar||[]).length?`<div class="banner">⚠ Clases con lista pasada pero sen ningún monitor fichado:<br>${d.senFichar.map(x=>`${esc(x.grupo)} ${fmt(x.data)}`).join(' · ')}<br><small>Podes engadilos desde Lista, escollendo ese día e grupo.</small></div>`:'')
+      + '<div class="legend">Datos completos na pestana "Fichaxes" da folla do club.</div>';
   }
 
   // ---------- Summary ----------
@@ -334,7 +416,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   // ---------- Entrada con PIN ----------
   function setLogged(on){
     document.querySelector('.tabs').hidden=!on; $('#datebar').hidden=!on || st.tab!=='lista'; $('#chips').hidden=!on; $('#logoutBar').hidden=!on;
-    if(!on){ $('#whoami').textContent=''; $('#vResumo').hidden=true; $('#vLista').hidden=false; }
+    if(!on){ $('#whoami').textContent=''; $('#vResumo').hidden=true; $('#vPagos').hidden=true; $('#tabPagos').hidden=true; $('#vLista').hidden=false; }
   }
   function logout(){ try{localStorage.removeItem('mb3-token');}catch(e){} st.token=''; st.roster=null; st.gid=null; showLogin(); }
   function showLogin(msg){
@@ -373,10 +455,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   // ---------- Boot ----------
   function init(){
     setLogged(true);
-    st.tab='lista'; $('#tabLista').setAttribute('aria-pressed',true); $('#tabResumo').setAttribute('aria-pressed',false); $('#vResumo').hidden=true; $('#vLista').hidden=false; $('#datebar').hidden=false;
+    st.tab='lista'; $('#tabLista').setAttribute('aria-pressed',true); $('#tabResumo').setAttribute('aria-pressed',false); $('#tabPagos').setAttribute('aria-pressed',false); $('#vPagos').hidden=true; $('#chips').hidden=false; $('#vResumo').hidden=true; $('#vLista').hidden=false; $('#datebar').hidden=false;
     st.roster=null; renderLista();
     run('getInit').then(d=>{
       st.roster={grupos:d.grupos}; st.meus=d.meus||[]; st.admin=!!d.admin; st.nome=d.nome||''; $('#whoami').innerHTML=esc(d.nome||'')+(d.admin?' <span class="adm" title="Administrador" aria-label="Administrador"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.9-4.9 1.4 1.4-6.3 6.3z"/></svg></span>':'');
+      $('#tabPagos').hidden=!st.admin;
+      if(st.admin) run('getMonitores').then(m=>{ st.monitores=m||[]; renderFich(); }).catch(()=>{});
       if(!st.roster.grupos.length){ $('#vLista').innerHTML='<div class="note">Aínda non hai grupos na folla "Grupos".</div>'; return; }
       pickDefaultGroup(true); renderChips(); openSession();
     }).catch(e=>{ if(!isAuth(e)) $('#vLista').innerHTML='<div class="note">Non se puido cargar. Comproba a conexión e recarga.</div>'; });
